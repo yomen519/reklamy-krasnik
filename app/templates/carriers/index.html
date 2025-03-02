@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Nośniki reklamowe - Kraśnik{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Nośniki reklamowe</h1>
+    <div>
+        <a href="{{ url_for('carrier.add') }}" class="btn btn-primary">Dodaj nowy nośnik</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <form class="row g-3" method="GET">
+            <div class="col-md-3">
+                <select class="form-select" name="type">
+                    <option value="">Wszystkie typy</option>
+                    <option value="citylight" {% if request.args.get('type') == 'citylight' %}selected{% endif %}>Citylighty</option>
+                    <option value="baner" {% if request.args.get('type') == 'baner' %}selected{% endif %}>Banery</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="status">
+                    <option value="">Wszystkie statusy</option>
+                    <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Aktywne</option>
+                    <option value="damaged" {% if request.args.get('status') == 'damaged' %}selected{% endif %}>Uszkodzone</option>
+                    <option value="inactive" {% if request.args.get('status') == 'inactive' %}selected{% endif %}>Nieaktywne</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="search" placeholder="Szukaj lokalizacji..." value="{{ request.args.get('search', '') }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Filtruj</button>
+            </div>
+        </form>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Typ</th>
+                        <th>Lokalizacja</th>
+                        <th>Wymiary</th>
+                        <th>Strony</th>
+                        <th>Status</th>
+                        <th>Stan techniczny</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for carrier in carriers %}
+                    <tr>
+                        <td>{{ carrier.id }}</td>
+                        <td>
+                            {% if carrier.carrier_type == 'citylight' %}
+                                <span class="badge bg-primary">Citylight</span>
+                            {% elif carrier.carrier_type == 'baner' %}
+                                <span class="badge bg-danger">Baner</span>
+                            {% else %}
+                                {{ carrier.carrier_type }}
+                            {% endif %}
+                        </td>
+                        <td>{{ carrier.location.name if carrier.location else 'Brak' }}</td>
+                        <td>{{ carrier.dimensions or 'Nie określono' }}</td>
+                        <td>{{ carrier.sides }}</td>
+                        <td>
+                            {% if carrier.status == 'active' %}
+                                <span class="badge bg-success">Aktywny</span>
+                            {% elif carrier.status == 'damaged' %}
+                                <span class="badge bg-warning text-dark">Uszkodzony</span>
+                            {% elif carrier.status == 'repair_needed' %}
+                                <span class="badge bg-warning">Wymaga naprawy</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Nieaktywny</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ carrier.technical_condition or 'Nie określono' }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('carrier.view', carrier_id=carrier.id) }}" class="btn btn-sm btn-info">Podgląd</a>
+                                <a href="{{ url_for('carrier.edit', carrier_id=carrier.id) }}" class="btn btn-sm btn-warning">Edytuj</a>
+                                <a href="{{ url_for('ad.add', carrier_id=carrier.id) }}" class="btn btn-sm btn-primary">Dodaj reklamę</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center">Brak nośników reklamowych.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+<!--

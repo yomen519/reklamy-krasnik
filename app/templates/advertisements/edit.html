@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Edytuj reklamę #{{ ad.id }} - Kraśnik{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Edytuj reklamę #{{ ad.id }}</h1>
+    <div>
+        <a href="{{ url_for('ad.view', ad_id=ad.id) }}" class="btn btn-secondary">Anuluj</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            {{ form.csrf_token }}
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="carrier_id" class="form-label">{{ form.carrier_id.label }}</label>
+                        {{ form.carrier_id(class="form-control", id="carrier_id") }}
+                        {% if form.carrier_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.carrier_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="side" class="form-label">{{ form.side.label }}</label>
+                        {{ form.side(class="form-control", id="side") }}
+                        {% if form.side.errors %}
+                            <div class="text-danger">
+                                {% for error in form.side.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label">{{ form.title.label }}</label>
+                        {{ form.title(class="form-control", id="title") }}
+                        {% if form.title.errors %}
+                            <div class="text-danger">
+                                {% for error in form.title.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="client" class="form-label">{{ form.client.label }}</label>
+                        {{ form.client(class="form-control", id="client") }}
+                        {% if form.client.errors %}
+                            <div class="text-danger">
+                                {% for error in form.client.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="start_date" class="form-label">{{ form.start_date.label }}</label>
+                        {{ form.start_date(class="form-control", id="start_date", type="date") }}
+                        {% if form.start_date.errors %}
+                            <div class="text-danger">
+                                {% for error in form.start_date.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="end_date" class="form-label">{{ form.end_date.label }}</label>
+                        {{ form.end_date(class="form-control", id="end_date", type="date") }}
+                        {% if form.end_date.errors %}
+                            <div class="text-danger">
+                                {% for error in form.end_date.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="status" class="form-label">{{ form.status.label }}</label>
+                        {{ form.status(class="form-control", id="status") }}
+                        {% if form.status.errors %}
+                            <div class="text-danger">
+                                {% for error in form.status.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="notes" class="form-label">{{ form.notes.label }}</label>
+                {{ form.notes(class="form-control", id="notes", rows=3) }}
+                {% if form.notes.errors %}
+                    <div class="text-danger">
+                        {% for error in form.notes.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const carrierSelect = document.getElementById('carrier_id');
+        const sideSelect = document.getElementById('side');
+        const currentSide = {{ ad.side }};
+
+        // Funkcja aktualizująca dostępne strony nośnika
+        function updateSides() {
+            const carrierId = carrierSelect.value;
+            if (carrierId) {
+                fetch(`/ads/get-carrier-sides/${carrierId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Zapamiętanie obecnej wartości
+                        const currentValue = sideSelect.value;
+
+                        // Czyszczenie obecnych opcji
+                        sideSelect.innerHTML = '';
+
+                        // Dodawanie nowych opcji
+                        data.forEach(side => {
+                            const option = document.createElement('option');
+                            option.value = side[0];
+                            option.textContent = side[1];
+
+                            // Wybierz opcję, która była wcześniej wybrana, jeśli istnieje
+                            if (side[0] == currentValue) {
+                                option.selected = true;
+                            }
+
+                            sideSelect.appendChild(option);
+                        });
+
+                        // Jeśli nie ma wybranej wartości, ustaw na podstawie początkowych danych
+                        if (sideSelect.selectedIndex === -1 && data.some(side => side[0] == currentSide)) {
+                            sideSelect.value = currentSide;
+                        }
+                    })
+                    .catch(error => console.error('Błąd pobierania stron nośnika:', error));
+            }
+        }
+
+        // Aktualizacja przy zmianie nośnika
+        carrierSelect.addEventListener('change', updateSides);
+
+        // Aktualizacja przy pierwszym załadowaniu strony
+        updateSides();
+    });
+</script>
+{% endblock %}

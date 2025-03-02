@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Raporty - Kraśnik{% endblock %}
+
+{% block content %}
+<h1>Raporty</h1>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Dostępne nośniki reklamowe</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Raport pokazuje dostępne nośniki reklamowe w wybranym okresie.</p>
+                <a href="{{ url_for('report.available_carriers') }}" class="btn btn-primary">Pokaż raport</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">Kampanie reklamowe</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Raport kampanii reklamowych z możliwością filtrowania po okresie i kliencie.</p>
+                <a href="{{ url_for('report.ad_campaigns') }}" class="btn btn-success">Pokaż raport</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="alert alert-info">
+            <p><strong>Wskazówka:</strong> Każdy raport można wyeksportować do formatów CSV, Excel lub PDF. Użyj przycisków eksportu na stronie raportu.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

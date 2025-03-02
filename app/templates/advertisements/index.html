@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Reklamy - Kraśnik{% endblock %}
+{% block content %}
+<h1>Reklamy</h1>
+<div class="mb-3">
+    <a href="{{ url_for('ad.add') }}" class="btn btn-primary">Dodaj nową reklamę</a>
+    <a href="{{ url_for('ad.batch_upload') }}" class="btn btn-success">
+        <i class="fas fa-cloud-upload-alt"></i> Masowe wczytywanie zdjęć
+    </a>
+</div>
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tytuł</th>
+                    <th>Nośnik</th>
+                    <th>Daty</th>
+                    <th>Status</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ad in ads %}
+                <tr>
+                    <td>{{ ad.id }}</td>
+                    <td>{{ ad.title }}</td>
+                    <td>{{ ad.carrier.location.name if ad.carrier and ad.carrier.location else 'Brak' }}</td>
+                    <td>{{ ad.start_date }} - {{ ad.end_date }}</td>
+                    <td>{{ ad.status_pl }}</td>
+                    <td>
+                        <a href="{{ url_for('ad.view', ad_id=ad.id) }}" class="btn btn-sm btn-info">Podgląd</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">Brak reklam</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

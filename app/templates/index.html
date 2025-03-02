@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Mapa Reklam - Kraśnik{% endblock %}
+
+{% block styles %}
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+    }
+    .custom-popup .leaflet-popup-content {
+        max-width: 300px;
+        min-width: 250px;
+        overflow-x: hidden;
+    }
+    .carrier {
+        margin-bottom: 10px;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+    }
+    .advertisement {
+        margin-bottom: 8px;
+        border-top: 1px solid #eee;
+        padding-top: 8px;
+    }
+    .swiper {
+        width: 100%;
+        height: 150px;
+        margin-top: 10px;
+    }
+    .swiper-slide {
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .swiper-slide img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    .swiper-button-next, .swiper-button-prev {
+        color: #3388ff;
+        transform: scale(0.7);
+    }
+    .swiper-pagination-bullet-active {
+        background-color: #3388ff;
+    }
+    .citylight-marker div {
+        background-color: #3388ff;
+    }
+    .baner-marker div {
+        background-color: #ff3333;
+    }
+    .delete-photo {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        font-size: 0.7rem;
+        padding: 2px 5px;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Mapa nośników reklamowych</h1>
+<div class="row mb-3">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Filtrowanie</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <select id="type-filter" class="form-select">
+                            <option value="">Wszystkie typy</option>
+                            <option value="citylight">Citylighty</option>
+                            <option value="baner">Banery</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="status-filter" class="form-select">
+                            <option value="">Wszystkie statusy</option>
+                            <option value="active">Aktywne</option>
+                            <option value="damaged">Uszkodzone</option>
+                            <option value="inactive">Nieaktywne</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button id="apply-filters" class="btn btn-primary">Zastosuj</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <div id="map"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Użyj parametrów przekazanych z backendu lub domyślnych wartości
+    const mapCenter = JSON.parse('{{ map_center|default("[50.946954, 22.221636]")|tojson|safe }}');
+    const mapZoom = parseInt('{{ map_zoom|default(13) }}');
+
+    // Inicjalizacja mapy z tymi parametrami
+    const map = L.map('map').setView(mapCenter, mapZoom);
+
+    // Dodajemy warstwę OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Tworzymy warstwę dla markerów
+    const markers = L.markerClusterGroup();
+    map.addLayer(markers);
+
+    // Definiujemy ikony dla różnych typów nośników
+    const markerIcons = {
+        'citylight': L.divIcon({
+            className: 'custom-marker citylight-marker',
+            html: '<div style="background-color: #3388ff; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white;"></div>',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+        }),
+        'baner': L.divIcon({
+            className: 'custom-marker baner-marker',
+            html: '<div style="background-color: #ff3333; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white;"></div>',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+        }),
+        'default': L.divIcon({
+            className: 'custom-marker default-marker',
+            html: '<div style="background-color: #33cc33; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white;"></div>',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+        })
+    };
+
+    // Funkcja do ładowania danych mapy
+    function loadMapData() {
+        const typeFilter = document.getElementById('type-filter').value;
+        const statusFilter = document.getElementById('status-filter').value;
+
+        // Parametry filtrowania
+        let params = new URLSearchParams();
+        if (typeFilter) params.append('type', typeFilter);
+        if (statusFilter) params.append('status', statusFilter);
+
+        // Czyścimy istniejące markery
+        markers.clearLayers();
+
+        // Pobieramy dane z API
+        fetch('/api/map-data?' + params.toString())
+            .then(response => response.json())
+            .then(data => {
+                // Dodajemy markery dla każdej lokalizacji
+                data.features.forEach(feature => {
+                    const coords = feature.geometry.coordinates;
+                    const properties = feature.properties;
+
+                    // Wybieramy ikonę na podstawie pierwszego nośnika w lokalizacji
+                    let icon = markerIcons.default;
+                    if (properties.carriers && properties.carriers.length > 0) {
+                        const firstCarrierType = properties.carriers[0].type;
+                        icon = markerIcons[firstCarrierType] || markerIcons.default;
+                    }
+
+                    // Tworzymy treść popupu
+                    let popupContent = `
+                        <div class="popup-content">
+                            <h5>${properties.name}</h5>
+                            <p>${properties.address || ''}</p>
+                    `;
+
+                    // Dodajemy nośniki
+                    if (properties.carriers && properties.carriers.length > 0) {
+                        popupContent += `<div class="carriers">`;
+                        properties.carriers.forEach(carrier => {
+                            popupContent += `
+                                <div class="carrier mb-2 p-2 border-top">
+                                    <strong>${carrier.type === 'citylight' ? 'Citylight' : 'Baner'}</strong>
+                                    <p>Wymiary: ${carrier.dimensions || 'nie określono'}</p>
+                                    <p>Stan: ${carrier.technical_condition || 'nie określono'}</p>
+                            `;
+
+                            // Dodajemy reklamy z karuzelą zdjęć
+                            if (carrier.advertisements && carrier.advertisements.length > 0) {
+                                carrier.advertisements.forEach((ad, adIndex) => {
+                                    popupContent += `
+                                        <div class="advertisement p-2 border-top">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <p><strong>Kampania:</strong> ${ad.title || 'Bez nazwy'}</p>
+                                                <div>
+                                                    <a href="/ads/${ad.id}" class="btn btn-sm btn-outline-primary">Edytuj</a>
+                                                    <a href="/ads/${ad.id}/photos/add?from_map=1&lat=${coords[1]}&lon=${coords[0]}" class="btn btn-sm btn-outline-success">+ Zdjęcie</a>
+                                                </div>
+                                            </div>
+                                            <p><strong>Termin:</strong> ${ad.start_date} - ${ad.end_date}</p>
+                                    `;
+
+                                    // Dodajemy karuzelę zdjęć, jeśli są zdjęcia
+                                    if (ad.photos && ad.photos.length > 0) {
+                                        // Unikalny identyfikator dla karuzeli
+                                        const carouselId = `carousel-${properties.id}-${carrier.id}-${adIndex}`;
+
+                                        popupContent += `
+                                            <!-- Karuzela Swiper -->
+                                            <div class="swiper ${carouselId}" style="width:100%; height:150px; margin-top:10px;">
+                                                <div class="swiper-wrapper">
+                                        `;
+
+                                        // Dodajemy zdjęcia od najnowszego (odwracamy kolejność)
+                                        const sortedPhotos = [...ad.photos].reverse();
+                                        sortedPhotos.forEach(photo => {
+                                            popupContent += `
+                                                <div class="swiper-slide" style="text-align:center;">
+                                                    <a href="${photo.original_url}" target="_blank">
+                                                        <img src="${photo.thumbnail_url}" alt="Zdjęcie" style="max-height:100%; max-width:100%; object-fit:contain;">
+                                                    </a>
+                                                    <a href="/photos/${photo.id}/delete?from_map=1&lat=${coords[1]}&lon=${coords[0]}" 
+                                                       class="btn btn-sm btn-danger delete-photo"
+                                                       onclick="return confirm('Czy na pewno chcesz usunąć to zdjęcie?')">Usuń</a>
+                                                </div>
+                                            `;
+                                        });
+
+                                        popupContent += `
+                                                </div>
+                                                <!-- Dodajemy paginację -->
+                                                <div class="swiper-pagination"></div>
+                                                <!-- Dodajemy przyciski nawigacji -->
+                                                <div class="swiper-button-next"></div>
+                                                <div class="swiper-button-prev"></div>
+                                            </div>
+                                        `;
+                                    } else {
+                                        popupContent += `<p class="small text-muted mt-1">Brak zdjęć</p>`;
+                                    }
+
+                                    popupContent += `</div>`;
+                                });
+                            } else {
+                                popupContent += `<p>Brak aktywnych reklam</p>`;
+                                popupContent += `<a href="/ads/add?carrier_id=${carrier.id}" class="btn btn-sm btn-outline-primary">Dodaj reklamę</a>`;
+                            }
+
+                            popupContent += `</div>`;
+                        });
+                        popupContent += `</div>`;
+                    }
+
+                    popupContent += `</div>`;
+
+                    // Tworzymy marker i dodajemy do mapy
+                    const marker = L.marker([coords[1], coords[0]], { icon: icon })
+                        .bindPopup(popupContent, {
+                            maxWidth: 300,
+                            minWidth: 250,
+                            className: 'custom-popup'
+                        })
+                        .addTo(markers);
+
+                    // Po otwarciu popupu, inicjalizujemy karuzele
+                    marker.on('popupopen', function() {
+                        // Swiper może wymagać niewielkiego opóźnienia, aby prawidłowo się zainicjalizować
+                        setTimeout(function() {
+                            const swipers = document.querySelectorAll('.swiper');
+                            swipers.forEach(swiperEl => {
+                                if (!swiperEl.swiper) {
+                                    // Sprawdzamy czy Swiper już nie został zainicjalizowany
+                                    const swiperClass = swiperEl.className.split(' ').find(cls => cls.startsWith('carousel-'));
+                                    if (swiperClass) {
+                                        new Swiper(`.${swiperClass}`, {
+                                            slidesPerView: 1,
+                                            spaceBetween: 10,
+                                            navigation: {
+                                                nextEl: '.swiper-button-next',
+                                                prevEl: '.swiper-button-prev',
+                                            },
+                                            pagination: {
+                                                el: '.swiper-pagination',
+                                                clickable: true,
+                                            },
+                                            autoplay: {
+                                                delay: 5000,
+                                            },
+                                        });
+                                    }
+                                }
+                            });
+                        }, 300);
+                    });
+                });
+            })
+            .catch(error => console.error('Błąd pobierania danych mapy:', error));
+    }
+
+    // Ładujemy dane przy starcie
+    loadMapData();
+
+    // Obsługa przycisku filtrowania
+    document.getElementById('apply-filters').addEventListener('click', function() {
+        loadMapData();
+    });
+</script>
+{% endblock %}

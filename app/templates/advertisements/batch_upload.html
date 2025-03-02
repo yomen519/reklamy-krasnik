@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Masowe wczytywanie zdjęć{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Masowe wczytywanie zdjęć</h1>
+    
+    <div class="alert alert-info">
+        <h5>Jak to działa?</h5>
+        <p>System spróbuje automatycznie przypisać zdjęcia do reklam na podstawie danych GPS i daty wykonania zdjęcia.</p>
+        <p>Zdjęcia, których nie uda się przypisać automatycznie, będzie można przypisać ręcznie w następnym kroku.</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Wczytaj zdjęcia</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label for="photos" class="form-label">Wybierz zdjęcia</label>
+                    <input type="file" class="form-control" id="photos" name="photos" multiple accept="image/*">
+                    <div class="form-text">Możesz wybrać wiele plików jednocześnie. Dozwolone formaty: JPG, PNG.</div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Wczytaj i analizuj</button>
+                    <a href="{{ url_for('ad.index') }}" class="btn btn-secondary">Anuluj</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if active_ads %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5>Aktywne reklamy</h5>
+        </div>
+        <div class="card-body">
+            <p>Poniższe reklamy są obecnie aktywne i mogą zostać automatycznie przypisane:</p>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tytuł</th>
+                        <th>Lokalizacja</th>
+                        <th>Nośnik</th>
+                        <th>Okres</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ad in active_ads %}
+                    <tr>
+                        <td>{{ ad.id }}</td>
+                        <td>{{ ad.title }}</td>
+                        <td>{{ ad.carrier.location.name }}</td>
+                        <td>{{ ad.carrier.carrier_type }} (strona {{ ad.side }})</td>
+                        <td>{{ ad.start_date.strftime('%d.%m.%Y') }} - {{ ad.end_date.strftime('%d.%m.%Y') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

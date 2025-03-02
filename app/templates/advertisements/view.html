@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Szczegóły reklamy #{{ ad.id }} - Kraśnik{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css">
+<style>
+    .swiper {
+        width: 100%;
+        height: 400px;
+        margin: 20px 0;
+    }
+    .swiper-slide {
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #f8f9fa;
+    }
+    .swiper-slide img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    .thumbnail-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    .thumbnail {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border: 2px solid #dee2e6;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .thumbnail:hover {
+        border-color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Reklama #{{ ad.id }}</h1>
+    <div>
+        <a href="{{ url_for('main.index', lat=ad.carrier.location.lat, lon=ad.carrier.location.lon, zoom=17) }}" 
+           class="btn btn-info">
+            <i class="fas fa-map-marker-alt"></i> Pokaż na mapie
+        </a>
+        <a href="{{ url_for('carrier.view', carrier_id=ad.carrier_id) }}" class="btn btn-secondary">Powrót do nośnika</a>
+        <a href="{{ url_for('ad.edit', ad_id=ad.id) }}" class="btn btn-primary">Edytuj</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Informacje o reklamie</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Tytuł:</strong> {{ ad.title or 'Bez tytułu' }}</p>
+                        <p><strong>Klient:</strong> {{ ad.client or 'Nie określono' }}</p>
+                        <p><strong>Nośnik:</strong> {{ ad.carrier.carrier_type|capitalize }} #{{ ad.carrier_id }}</p>
+                        <p><strong>Strona nośnika:</strong> {{ ad.side }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Okres ekspozycji:</strong> {{ ad.start_date.strftime('%Y-%m-%d') if ad.start_date else '' }} - {{ ad.end_date.strftime('%Y-%m-%d') if ad.end_date else '' }}</p>
+                        <p><strong>Status:</strong>
+                            {% if ad.is_active %}
+                            <span class="badge bg-success">Aktywna</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Nieaktywna</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Pozostało dni:</strong> {{ ad.days_remaining }}</p>
+                        <p><strong>Lokalizacja:</strong> {{ ad.carrier.location.name if ad.carrier and ad.carrier.location else 'Nie określono' }}</p>
+                    </div>
+                </div>
+
+                {% if ad.notes %}
+                <div class="mb-3">
+                    <h6>Uwagi:</h6>
+                    <p>{{ ad.notes|nl2br }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Zdjęcia</h5>
+                <a href="{{ url_for('ad.add_photos', ad_id=ad.id) }}" class="btn btn-primary btn-sm">Dodaj zdjęcia</a>
+            </div>
+            <div class="card-body">
+                {% if ad.photos|length > 0 %}
+                    <p>Liczba zdjęć: {{ ad.photos|length }}</p>
+                {% else %}
+                    <p class="text-center py-3">Brak zdjęć dla tej reklamy.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if ad.photos|length > 0 %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Galeria zdjęć</h5>
+    </div>
+    <div class="card-body">
+        <!-- Swiper -->
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+                {% for photo in ad.photos %}
+                <div class="swiper-slide">
+                    <img src="{{ photo.original_url }}" alt="Zdjęcie {{ loop.index }}">
+                </div>
+                {% endfor %}
+            </div>
+            <div class="swiper-button-next"></div>
+            <div class="swiper-button-prev"></div>
+            <div class="swiper-pagination"></div>
+        </div>
+
+        <!-- Thumbnails -->
+        <div class="thumbnail-container">
+            {% for photo in ad.photos %}
+            <img src="{{ photo.thumbnail_url }}" alt="Miniatura {{ loop.index }}" class="thumbnail" data-index="{{ loop.index0 }}">
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Swiper
+        const swiper = new Swiper(".mySwiper", {
+            navigation: {
+                nextEl: ".swiper-button-next",
+                prevEl: ".swiper-button-prev",
+            },
+            pagination: {
+                el: ".swiper-pagination",
+                clickable: true,
+            },
+        });
+
+        // Thumbnail click handling
+        const thumbnails = document.querySelectorAll('.thumbnail');
+        thumbnails.forEach(thumb => {
+            thumb.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                swiper.slideTo(index);
+            });
+        });
+    });
+</script>
+{% endblock %}

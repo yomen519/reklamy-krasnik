@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Szczegóły nośnika - {{ carrier.carrier_type|capitalize }} {{ carrier.id }} - Kraśnik{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Szczegóły nośnika #{{ carrier.id }}</h1>
+    <div>
+        <a href="{{ url_for('carrier.index') }}" class="btn btn-secondary">Powrót do listy</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Informacje podstawowe</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Typ nośnika:</strong> {{ carrier.carrier_type|capitalize }}</p>
+                <p><strong>Wymiary:</strong> {{ carrier.dimensions or 'Nie określono' }}</p>
+                <p><strong>Liczba stron:</strong> {{ carrier.sides }}</p>
+                <p><strong>Stan techniczny:</strong> {{ carrier.technical_condition or 'Nie określono' }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Status:</strong> {{ carrier.status }}</p>
+                <p><strong>Data instalacji:</strong> {{ carrier.installation_date.strftime('%Y-%m-%d') if carrier.installation_date else 'Nie określono' }}</p>
+                <p><strong>Lokalizacja:</strong> {{ carrier.location.name if carrier.location else 'Nie określono' }}</p>
+                <p><strong>Adres:</strong> {{ carrier.location.address if carrier.location else 'Nie określono' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Aktywne reklamy</h5>
+        <a href="{{ url_for('ad.add', carrier_id=carrier.id) }}" class="btn btn-primary btn-sm">Dodaj reklamę</a>
+    </div>
+    <div class="card-body">
+        {% if carrier.advertisements.all() %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Strona</th>
+                            <th>Tytuł</th>
+                            <th>Okres ekspozycji</th>
+                            <th>Status</th>
+                            <th>Zdjęcia</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ad in carrier.advertisements.all() %}
+                        <tr>
+                            <td>{{ ad.id }}</td>
+                            <td>{{ ad.side }}</td>
+                            <td>{{ ad.title or 'Bez tytułu' }}</td>
+                            <td>{{ ad.start_date.strftime('%Y-%m-%d') if ad.start_date else '' }} - {{ ad.end_date.strftime('%Y-%m-%d') if ad.end_date else '' }}</td>
+                            <td>
+                                {% if ad.is_active %}
+                                <span class="badge bg-success">Aktywna</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Nieaktywna</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ad.photos %}
+                                <span class="badge bg-info">{{ ad.photos|length }}</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Brak</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('ad.view', ad_id=ad.id) }}" class="btn btn-sm btn-info">Podgląd</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center py-3">Brak aktywnych reklam dla tego nośnika.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if carrier.notes %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Uwagi</h5>
+    </div>
+    <div class="card-body">
+        <p>{{ carrier.notes|nl2br }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

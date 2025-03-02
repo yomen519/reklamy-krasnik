@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Edytuj lokalizację - {{ location.name }} - Kraśnik{% endblock %}
+
+{% block content %}
+<h1>Edytuj lokalizację</h1>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            {{ form.csrf_token }}
+
+            <div class="mb-3">
+                <label for="name" class="form-label">{{ form.name.label }}</label>
+                {{ form.name(class="form-control", id="name") }}
+                {% if form.name.errors %}
+                    <div class="text-danger">
+                        {% for error in form.name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="address" class="form-label">{{ form.address.label }}</label>
+                {{ form.address(class="form-control", id="address") }}
+                {% if form.address.errors %}
+                    <div class="text-danger">
+                        {% for error in form.address.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="coordinates" class="form-label">{{ form.coordinates.label }}</label>
+                {{ form.coordinates(class="form-control", id="coordinates", placeholder="np. 50.9283,22.2268") }}
+                <small class="text-muted">Format: szerokość,długość (np. 50.9283,22.2268)</small>
+                {% if form.coordinates.errors %}
+                    <div class="text-danger">
+                        {% for error in form.coordinates.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">{{ form.description.label }}</label>
+                {{ form.description(class="form-control", id="description", rows=3) }}
+                {% if form.description.errors %}
+                    <div class="text-danger">
+                        {% for error in form.description.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3 form-check">
+                {{ form.active(class="form-check-input", id="active") }}
+                <label class="form-check-label" for="active">{{ form.active.label }}</label>
+            </div>
+
+            <div class="mb-3 form-check">
+                {{ form.permanent(class="form-check-input", id="permanent") }}
+                <label class="form-check-label" for="permanent">{{ form.permanent.label }}</label>
+            </div>
+
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
+                <a href="{{ url_for('location.index') }}" class="btn btn-secondary">Anuluj</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

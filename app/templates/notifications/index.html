@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Powiadomienia - Kraśnik{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Powiadomienia</h1>
+    <div>
+        <a href="{{ url_for('notification.check') }}" class="btn btn-primary">
+            <i class="fas fa-sync-alt"></i> Sprawdź nowe
+        </a>
+        <form method="POST" action="{{ url_for('notification.mark_all_read') }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary">
+                <i class="fas fa-check-double"></i> Oznacz wszystkie jako przeczytane
+            </button>
+        </form>
+    </div>
+</div>
+
+{% if request.args.get('message') %}
+<div class="alert alert-info">{{ request.args.get('message') }}</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Lista powiadomień</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for notification in notifications.items %}
+            <div class="list-group-item {% if not notification.is_read %}list-group-item-{{ notification.type }}{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-1">{{ notification.title }}</h5>
+                    <small class="text-muted">{{ notification.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                </div>
+                <p class="mb-1">{{ notification.message }}</p>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div>
+                        {% if notification.target_url %}
+                        <a href="{{ notification.target_url }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-external-link-alt"></i> Przejdź
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if not notification.is_read %}
+                        <form method="POST" action="{{ url_for('notification.mark_read', notification_id=notification.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-check"></i> Oznacz jako przeczytane
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="badge bg-secondary">Przeczytane</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="list-group-item text-center py-4">
+                <p class="mb-0">Brak powiadomień.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% if notifications.pages > 1 %}
+    <div class="card-footer">
+        <nav aria-label="Paginacja powiadomień">
+            <ul class="pagination justify-content-center mb-0">
+                {% if notifications.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('notification.index', page=notifications.prev_num) }}" aria-label="Poprzednia">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&laquo;</span>
+                </li>
+                {% endif %}
+                
+                {% for page_num in notifications.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num == notifications.page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('notification.index', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if notifications.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('notification.index', page=notifications.next_num) }}" aria-label="Następna">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&raquo;</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

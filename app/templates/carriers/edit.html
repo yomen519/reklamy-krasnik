@@ -1,0 +1,126 @@
+% extends "base.html" %}
+
+{% block title %}Edytuj nośnik #{{ carrier.id }} - Kraśnik{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Edytuj nośnik #{{ carrier.id }}</h1>
+    <div>
+        <a href="{{ url_for('carrier.view', carrier_id=carrier.id) }}" class="btn btn-secondary">Anuluj</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            {{ form.csrf_token }}
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="location_id" class="form-label">{{ form.location_id.label }}</label>
+                        {{ form.location_id(class="form-control", id="location_id") }}
+                        {% if form.location_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.location_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="carrier_type" class="form-label">{{ form.carrier_type.label }}</label>
+                        {{ form.carrier_type(class="form-control", id="carrier_type") }}
+                        {% if form.carrier_type.errors %}
+                            <div class="text-danger">
+                                {% for error in form.carrier_type.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="sides" class="form-label">{{ form.sides.label }}</label>
+                        {{ form.sides(class="form-control", id="sides") }}
+                        {% if form.sides.errors %}
+                            <div class="text-danger">
+                                {% for error in form.sides.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="dimensions" class="form-label">{{ form.dimensions.label }}</label>
+                        {{ form.dimensions(class="form-control", id="dimensions") }}
+                        {% if form.dimensions.errors %}
+                            <div class="text-danger">
+                                {% for error in form.dimensions.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="installation_date" class="form-label">{{ form.installation_date.label }}</label>
+                        {{ form.installation_date(class="form-control", id="installation_date", type="date") }}
+                        {% if form.installation_date.errors %}
+                            <div class="text-danger">
+                                {% for error in form.installation_date.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="status" class="form-label">{{ form.status.label }}</label>
+                        {{ form.status(class="form-control", id="status") }}
+                        {% if form.status.errors %}
+                            <div class="text-danger">
+                                {% for error in form.status.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="technical_condition" class="form-label">{{ form.technical_condition.label }}</label>
+                        {{ form.technical_condition(class="form-control", id="technical_condition", rows=3) }}
+                        {% if form.technical_condition.errors %}
+                            <div class="text-danger">
+                                {% for error in form.technical_condition.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="notes" class="form-label">{{ form.notes.label }}</label>
+                {{ form.notes(class="form-control", id="notes", rows=3) }}
+                {% if form.notes.errors %}
+                    <div class="text-danger">
+                        {% for error in form.notes.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

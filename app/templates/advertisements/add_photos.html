@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Dodaj zdjęcia - {{ ad.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Dodaj zdjęcia do reklamy</h1>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>{{ ad.title or 'Reklama bez tytułu' }}</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Klient:</strong> {{ ad.client or 'Brak danych' }}</p>
+            <p><strong>Lokalizacja:</strong> {{ ad.carrier.location.name }}</p>
+            <p><strong>Nośnik:</strong> {{ ad.carrier.carrier_type }} (strona {{ ad.side }})</p>
+            <p><strong>Okres ekspozycji:</strong> {{ ad.start_date.strftime('%d.%m.%Y') }} - {{ ad.end_date.strftime('%d.%m.%Y') }}</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Wczytaj zdjęcia</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label for="photos" class="form-label">Wybierz zdjęcia</label>
+                    <input type="file" class="form-control" id="photos" name="photos" multiple accept="image/*">
+                    <div class="form-text">Możesz wybrać wiele plików jednocześnie. Dozwolone formaty: JPG, PNG.</div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Wczytaj zdjęcia</button>
+                    {% if 'from_map' in request.args %}
+                    <a href="{{ url_for('main.index', lat=request.args.get('lat'), lon=request.args.get('lon')) }}" class="btn btn-secondary">Wróć do mapy</a>
+                    {% else %}
+                    <a href="{{ url_for('ad.view', ad_id=ad.id) }}" class="btn btn-secondary">Anuluj</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

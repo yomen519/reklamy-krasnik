@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Dodaj zdjęcia dla reklamy #{{ ad.id }} - Kraśnik{% endblock %}
+
+{% block styles %}
+<style>
+    #dropzone {
+        border: 2px dashed #0087F7;
+        border-radius: 5px;
+        padding: 60px 0;
+        text-align: center;
+        background-color: #f8f9fa;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    #dropzone:hover {
+        background-color: #e9ecef;
+    }
+    .preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    .preview-item {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .preview-remove {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        text-align: center;
+        line-height: 24px;
+        cursor: pointer;
+    }
+    .progress-bar {
+        height: 5px;
+        transition: width 0.3s;
+        background-color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Dodaj zdjęcia</h1>
+    <div>
+        <a href="{{ url_for('ad.view', ad_id=ad.id) }}" class="btn btn-secondary">Powrót do reklamy</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Reklama #{{ ad.id }} - {{ ad.title or 'Bez tytułu' }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <p><strong>Nośnik:</strong> {{ ad.carrier.carrier_type|capitalize }} #{{ ad.carrier_id }}</p>
+                <p><strong>Strona nośnika:</strong> {{ ad.side }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Lokalizacja:</strong> {{ ad.carrier.location.name if ad.carrier and ad.carrier.location else 'Nie określono' }}</p>
+                <p><strong>Okres ekspozycji:</strong> {{ ad.start_date.strftime('%Y-%m-%d') if ad.start_date else '' }} - {{ ad.end_date.strftime('%Y-%m-%d') if ad.end_date else '' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Upload zdjęć</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('ad.upload_photos', ad_id=ad.id) }}" method="post" enctype="multipart/form-data" id="uploadForm">
+            {{ form.csrf_token }}
+
+            <div id="dropzone">
+                <i class="bi bi-cloud-arrow-up fs-1"></i>
+                <h5 class="mt-2">Przeciągnij i upuść zdjęcia lub kliknij, aby wybrać</h5>
+                <p class="text-muted">Maksymalny rozmiar: 10MB. Akceptowane formaty: JPG, JPEG, PNG.</p>
+                <!-- Używamy zwykłego pola input type="file" z atrybutem multiple -->
+                <input type="file" name="photos" multiple style="display: none;" id="photoInput" accept=".jpg,.jpeg,.png">
+            </div>
+
+            <div class="preview-container" id="previewContainer"></div>
+
+            <div class="progress mt-3" style="display: none;" id="progressContainer">
+                <div class="progress-bar" role="progressbar" style="width: 0%;" id="progressBar"></div>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <button type="submit" class="btn btn-primary" id="uploadButton">Zapisz zdjęcia</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropzone = document.getElementById('dropzone');
+        const photoInput = document.getElementById('photoInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const previewContainer = document.getElementById('previewContainer');
+
+        // Handle click on dropzone
+        dropzone.addEventListener('click', function() {
+            photoInput.click();
+        });
+
+        // Handle drag and drop
+        dropzone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropzone.style.backgroundColor = '#e9ecef';
+        });
+
+        dropzone.addEventListener('dragleave', function() {
+            dropzone.style.backgroundColor = '#f8f9fa';
+        });
+
+        dropzone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropzone.style.backgroundColor = '#f8f9fa';
+
+            if (e.dataTransfer.files.length > 0) {
+                photoInput.files = e.dataTransfer.files;
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        // Handle file input change
+        photoInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                handleFiles(this.files);
+            }
+        });
+
+        // Handle files selection - tylko podgląd plików
+        function handleFiles(files) {
+            // Wyczyść podgląd
+            previewContainer.innerHTML = '';
+
+            Array.from(files).forEach(file => {
+                // Check file type
+                if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
+                    alert('Tylko pliki JPG, JPEG i PNG są akceptowane.');
+                    return;
+                }
+
+                // Check file size (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('Maksymalny rozmiar pliku to 10MB.');
+                    return;
+                }
+
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+
+                    previewItem.appendChild(img);
+                    previewContainer.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    });
+</script>
+{% endblock %}

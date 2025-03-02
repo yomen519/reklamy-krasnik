@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Przypisywanie zdjęć{% endblock %}
+
+{% block styles %}
+<style>
+    .thumbnail-container {
+        max-height: 200px;
+        overflow: hidden;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    .thumbnail-container img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    .ad-select {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .search-box {
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Przypisywanie nieprzypisanych zdjęć</h1>
+    
+    <div class="alert alert-info">
+        <p>Poniższe zdjęcia nie zostały przypisane automatycznie. Wybierz reklamę dla każdego zdjęcia.</p>
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between">
+                <h5>Przypisz zdjęcia do reklam</h5>
+                <div>
+                    <button type="submit" class="btn btn-primary">Zapisz przypisania</button>
+                    <a href="{{ url_for('ad.index') }}" class="btn btn-secondary">Anuluj</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for photo in unassigned_photos %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="thumbnail-container">
+                                <img src="/static/uploads/thumbnails/{{ photo.filename }}" alt="Miniatura">
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ photo.original_filename }}</p>
+                                {% if photo.taken_at %}
+                                <p class="card-text"><small class="text-muted">Wykonano: {{ photo.taken_at.strftime('%d.%m.%Y %H:%M') }}</small></p>
+                                {% endif %}
+                                {% if photo.gps_latitude and photo.gps_longitude %}
+                                <p class="card-text"><small class="text-muted">GPS: {{ photo.gps_latitude }}, {{ photo.gps_longitude }}</small></p>
+                                {% endif %}
+                                
+                                <div class="form-group search-box">
+                                    <input type="text" class="form-control" placeholder="Szukaj reklamy..." 
+                                           id="search-ad-{{ loop.index0 }}" 
+                                           onkeyup="searchAds(this, 'assignment-{{ loop.index0 }}')">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="assignment-{{ loop.index0 }}">Przypisz do reklamy:</label>
+                                    <select name="assignments" id="assignment-{{ loop.index0 }}" 
+                                            class="form-select ad-select" size="10">
+                                        <option value="">-- Wybierz reklamę --</option>
+                                        {% for ad in ads %}
+                                        <option value="{{ ad.id }}">
+                                            #{{ ad.id }} - {{ ad.title }} ({{ ad.carrier.location.name if ad.carrier and ad.carrier.location else 'Brak' }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">Zapisz wszystkie przypisania</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function searchAds(input, selectId) {
+    const filter = input.value.toUpperCase();
+    const select = document.getElementById(selectId);
+    const options = select.getElementsByTagName("option");
+    
+    for (let i = 0; i < options.length; i++) {
+        if (i === 0) continue; // Pomijamy pierwszą opcję "-- Wybierz reklamę --"
+        
+        const txtValue = options[i].textContent || options[i].innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            options[i].style.display = "";
+        } else {
+            options[i].style.display = "none";
+        }
+    }
+}
+
+// Gdy strona zostanie załadowana, zapewniamy że lista jest przewijalna
+document.addEventListener('DOMContentLoaded', function() {
+    const selects = document.querySelectorAll('.ad-select');
+    selects.forEach(select => {
+        select.style.display = 'block';
+    });
+});
+</script>
+{% endblock %}
